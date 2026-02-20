@@ -497,64 +497,71 @@
 
         document.querySelectorAll('.timeline-item').forEach(el => observer.observe(el));
 
-        // PDF Logic Avanzada
+        // PDF Logic Definitiva
         function downloadPDF() {
-            // Quitamos las animaciones temporalmente para el PDF
-            document.querySelectorAll('.timeline-item').forEach(el => {
-                el.style.transform = 'translateY(0)';
-                el.style.opacity = '1';
-                el.style.transition = 'none';
-            });
-
-            // Creamos un contenedor temporal que combine todo con el fondo incluido
-            const content = document.createElement('div');
-            content.style.backgroundColor = '#0a0a0a';
-            content.style.backgroundImage = 'linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url("mex_history_edu_bg.png")';
-            content.style.backgroundSize = 'cover';
-            content.style.backgroundPosition = 'center';
-            content.style.color = 'white';
-            content.style.padding = '20px';
-
-            // Clonamos header, timeline y footer
-            const header = document.querySelector('header').cloneNode(true);
-            const timeline = document.getElementById('timeline-body').cloneNode(true);
-            const biblio = document.getElementById('bibliografia').cloneNode(true);
-
-            content.appendChild(header);
-            content.appendChild(timeline);
-            content.appendChild(biblio);
-
-            // Lo ocultamos pero lo agregamos al body para que html2pdf pueda procesarlo
-            content.style.position = 'absolute';
-            content.style.left = '-9999px';
-            document.body.appendChild(content);
-
-            const opt = {
-                margin: 10,
-                filename: 'Odisea_Educativa_Ana_Vazquez.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#0a0a0a',
-                    logging: true,
-                    windowWidth: 1200 // Forza un ancho de escritorio para no colapsar el diseño
-                },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
             const btn = event.target.closest('button');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERANDO...';
 
-            html2pdf().from(content).set(opt).save().then(() => {
-                btn.innerHTML = originalText;
-                document.body.removeChild(content);
+            // 1. Forzar que todos los elementos sean visibles (quitar animaciones de scroll)
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach(el => {
+                el.classList.add('visible'); // Asegura que estén opacos
+                el.style.transform = 'translateY(0)';
+                el.style.opacity = '1';
+                el.style.transition = 'none'; // Evita que se muevan durante la captura
+            });
 
-                // Restauramos animaciones
-                document.querySelectorAll('.timeline-item').forEach(el => {
+            // 2. Ocultar botones y elementos interactivos temporalmente para el PDF
+            const buttonsSection = document.querySelector('.flex.flex-wrap.justify-center.gap-6');
+            if (buttonsSection) buttonsSection.style.display = 'none';
+
+            const mouseIcon = document.querySelector('.fa-mouse')?.parentElement;
+            if (mouseIcon) mouseIcon.style.display = 'none';
+
+            const backToTop = document.querySelector('.fa-arrow-up')?.parentElement;
+            if (backToTop) backToTop.style.display = 'none';
+
+            const viewBiblio = document.querySelector('.fa-book')?.parentElement;
+            if (viewBiblio) viewBiblio.style.display = 'none';
+
+            // 3. Opciones para una calidad fotográfica exacta
+            const opt = {
+                margin: 0,
+                filename: 'Odisea_Educativa_Ana_Vazquez.pdf',
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#0a0a0a',
+                    scrollY: 0,
+                    windowWidth: 1280 // Ancho forzado para no romper el flexbox
+                },
+                jsPDF: {
+                    unit: 'px',
+                    format: [1280, document.body.scrollHeight], // Un solo póster continuo
+                    orientation: 'portrait',
+                    hotfixes: ["px_scaling"]
+                }
+            };
+
+            // 4. Generar el PDF capturando el body directamente
+            html2pdf().from(document.body).set(opt).save().then(() => {
+                // 5. Restaurar la vista original
+                btn.innerHTML = originalText;
+
+                if (buttonsSection) buttonsSection.style.display = 'flex';
+                if (mouseIcon) mouseIcon.style.display = 'block';
+                if (backToTop) backToTop.style.display = 'inline-block';
+                if (viewBiblio) viewBiblio.style.display = 'inline-block';
+
+                timelineItems.forEach(el => {
                     el.style.transition = 'all 1s ease-out';
                 });
+            }).catch(err => {
+                console.error("Error al generar PDF:", err);
+                btn.innerHTML = 'ERROR AL GENERAR';
+                setTimeout(() => btn.innerHTML = originalText, 3000);
             });
         }
 
