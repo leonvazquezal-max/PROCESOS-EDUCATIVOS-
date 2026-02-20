@@ -497,14 +497,49 @@
 
         document.querySelectorAll('.timeline-item').forEach(el => observer.observe(el));
 
-        // PDF Logic
+        // PDF Logic Avanzada
         function downloadPDF() {
-            const element = document.getElementById('timeline-body');
+            // Quitamos las animaciones temporalmente para el PDF
+            document.querySelectorAll('.timeline-item').forEach(el => {
+                el.style.transform = 'translateY(0)';
+                el.style.opacity = '1';
+                el.style.transition = 'none';
+            });
+
+            // Creamos un contenedor temporal que combine todo con el fondo incluido
+            const content = document.createElement('div');
+            content.style.backgroundColor = '#0a0a0a';
+            content.style.backgroundImage = 'linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url("mex_history_edu_bg.png")';
+            content.style.backgroundSize = 'cover';
+            content.style.backgroundPosition = 'center';
+            content.style.color = 'white';
+            content.style.padding = '20px';
+
+            // Clonamos header, timeline y footer
+            const header = document.querySelector('header').cloneNode(true);
+            const timeline = document.getElementById('timeline-body').cloneNode(true);
+            const biblio = document.getElementById('bibliografia').cloneNode(true);
+
+            content.appendChild(header);
+            content.appendChild(timeline);
+            content.appendChild(biblio);
+
+            // Lo ocultamos pero lo agregamos al body para que html2pdf pueda procesarlo
+            content.style.position = 'absolute';
+            content.style.left = '-9999px';
+            document.body.appendChild(content);
+
             const opt = {
-                margin: 0,
-                filename: 'Odisea_Educativa_Mexico.pdf',
-                image: { type: 'jpeg', quality: 1.0 },
-                html2canvas: { scale: 1.5, useCORS: true, backgroundColor: '#000000' },
+                margin: 10,
+                filename: 'Odisea_Educativa_Ana_Vazquez.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#0a0a0a',
+                    logging: true,
+                    windowWidth: 1200 // Forza un ancho de escritorio para no colapsar el diseño
+                },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
@@ -512,8 +547,14 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GENERANDO...';
 
-            html2pdf().from(element).set(opt).save().then(() => {
+            html2pdf().from(content).set(opt).save().then(() => {
                 btn.innerHTML = originalText;
+                document.body.removeChild(content);
+
+                // Restauramos animaciones
+                document.querySelectorAll('.timeline-item').forEach(el => {
+                    el.style.transition = 'all 1s ease-out';
+                });
             });
         }
 
